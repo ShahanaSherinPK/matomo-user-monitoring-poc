@@ -41,8 +41,7 @@ Matomo Database
   |
   v
 Superadmin Dashboard
-````
-
+```
 ## Technologies Used
 
 * Node.js
