@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matomo Monitoring POC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h2>Login</h2>
+
+    <label>Username:</label>
+    <input type="text" id="username">
+
+    <br><br>
+
+    <label>Password:</label>
+    <input type="password" id="password">
+
+    <br><br>
+
+    <button onclick="login()">Login</button>
+
+    <script>
+
+    async function login() {
+    const username =
+        document.getElementById("username").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+    if (!username || !password) {
+        alert("Please enter username and password");
+        return;
+    }
+
+    try {
+        const response = await fetch("/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Login failed");
+            return;
+        }
+
+        localStorage.setItem(
+            "accessToken",
+            data.accessToken
+        );
+
+        localStorage.setItem(
+            "username",
+            username
+        );
+
+        window.location.href = "/dashboard.html";
+
+    } catch (error) {
+        console.error("Login error:", error);
+        alert("Failed to connect to server");
+    }
+}
+
+    </script>
+
+</body>
+</html>

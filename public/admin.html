@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matomo User Monitoring</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h2>Superadmin - User Monitoring</h2>
+
+    <!-- ========================================== -->
+    <!-- RECENTLY ACTIVE USERS -->
+    <!-- ========================================== -->
+
+    <h3>
+    Recently Active Users
+    (<span id="activeUserCount">0</span>)
+    </h3>
+
+    <button onclick="loadActiveUsers()">
+        Refresh Active Users
+    </button>
+
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+            <th>User ID</th>
+            <th>Last Activity</th>
+            <th>Activity</th>
+            <th>View History</th>
+            </tr>
+        </thead>
+
+        <tbody id="activeUsersTable">
+        </tbody>
+    </table>
+
+
+    <hr>
+
+
+    <!-- ========================================== -->
+    <!-- ORIGINAL MATOMO USER DETAILS -->
+    <!-- ========================================== -->
+
+    <h3>Matomo User Details</h3>
+
+    <button onclick="loadMatomoUsers()">
+        Refresh Data
+    </button>
+
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Visitor ID</th>
+                <th>Visit Time</th>
+                <th>Activity</th>
+            </tr>
+        </thead>
+
+        <tbody id="matomoTable">
+        </tbody>
+    </table>
+
+
+    <hr>
+
+
+    <!-- ========================================== -->
+    <!-- USER ACTIVITY HISTORY -->
+    <!-- ========================================== -->
+
+    <h2>User Activity History</h2>
+
+    <label for="userId">User ID:</label>
+
+    <input
+        type="text"
+        id="userId"
+        placeholder="Enter User ID"
+    >
+
+    <label for="startDate">Start Date:</label>
+
+    <input
+        type="date"
+        id="startDate"
+    >
+
+    <label for="endDate">End Date:</label>
+
+    <input
+        type="date"
+        id="endDate"
+    >
+
+    <button onclick="loadUserHistory()">
+        View Activity History
+    </button>
+
+
+    <table border="1" cellpadding="8">
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Module</th>
+                <th>Action</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+
+        <tbody id="activityTable">
+        </tbody>
+    </table>
+
+    <p id="historyMessage"></p>
+
+
+    <script>
+
+
+        // ==========================================
+        // RECENTLY ACTIVE USERS
+        // ==========================================
+
+        async function loadActiveUsers() {
+
+            try {
+
+                const response =
+                    await fetch("/matomo-active-users");
+
+                const users =
+                    await response.json();
+
+                const table =
+                    document.getElementById("activeUsersTable");
+                const count =
+                    document.getElementById("activeUserCount");
+
+                table.innerHTML = "";
+                count.textContent = users.length;
+
+                if (!response.ok) {
+
+                    console.error(
+                        "Failed to load active users:",
+                        users
+                    );
+
+                    return;
+                }
+
+                if (users.length === 0) {
+
+    const row =
+        document.createElement("tr");
+
+    row.innerHTML = `
+        <td colspan="4" style="text-align: center;">
+            No recently active users
+        </td>
+    `;
+
+    table.appendChild(row);
+
+} else {
+
+    users.forEach(visit => {
+
+        const row =
+            document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${visit.userId || "-"}</td>
+            <td>${visit.lastActivity || "-"}</td>
+            <td>${visit.activity || "-"}</td>
+            <td>
+                <button onclick="viewUserHistory('${visit.userId}')">
+                    View History
+                </button>
+            </td>
+        `;
+
+        table.appendChild(row);
+
+    });
+
+}
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load active users:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // ==========================================
+        // ORIGINAL MATOMO USER DETAILS
+        // ==========================================
+
+        async function loadMatomoUsers() {
+
+            try {
+
+                const response =
+                    await fetch("/matomo-users");
+
+                const users =
+                    await response.json();
+
+                const table =
+                    document.getElementById("matomoTable");
+
+                table.innerHTML = "";
+
+                users.forEach(visit => {
+
+                    const row =
+                        document.createElement("tr");
+
+                    const actionDetails =
+                        visit.actionDetails || [];
+
+                    const activity =
+                        actionDetails.map(action => {
+
+                            if (action.type === "event") {
+
+                                return `${action.eventCategory || "-"} → ${action.eventAction || "-"}`;
+
+                            }
+
+                            if (action.type === "action") {
+
+                                return `Page View → ${action.pageTitle || action.url || "-"}`;
+
+                            }
+
+                            return action.type || "Unknown";
+
+                        }).join("<br>");
+
+                    row.innerHTML = `
+                        <td>${visit.userId || "-"}</td>
+                        <td>${visit.visitorId || "-"}</td>
+                        <td>${visit.serverDate || ""} ${visit.serverTimePretty || ""}</td>
+                        <td>${activity || "-"}</td>
+                    `;
+
+                    table.appendChild(row);
+
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load Matomo data:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // ==========================================
+        // LOAD BOTH MONITORING TABLES
+        // ==========================================
+
+        loadActiveUsers();
+        setInterval(loadActiveUsers, 30000);
+        loadMatomoUsers();
+
+
+        // ==========================================
+        // VIEW HISTORY
+        // ==========================================
+
+        function viewUserHistory(userId) {
+
+            // Fill the User ID field
+            document.getElementById("userId").value = userId;
+
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date().toISOString().split("T")[0];
+
+            // Set today's date for both fields
+            document.getElementById("startDate").value = today;
+            document.getElementById("endDate").value = today;
+
+            // Scroll to the User Activity History section
+            document.getElementById("userId").scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+        }
+
+        
+
+        // ==========================================
+        // USER ACTIVITY HISTORY
+        // ==========================================
+
+        async function loadUserHistory() {
+
+            const userId =
+                document.getElementById("userId").value.trim();
+
+            const table =
+                document.getElementById("activityTable");
+
+            const message =
+                document.getElementById("historyMessage");
+
+            table.innerHTML = "";
+
+            message.textContent = "";
+
+
+            if (!userId) {
+
+                message.textContent =
+                    "Please enter a User ID.";
+
+                return;
+            }
+
+
+            try {
+
+                const startDate =
+                    document.getElementById("startDate").value;
+
+                const endDate =
+                    document.getElementById("endDate").value;
+
+
+                if (!startDate || !endDate) {
+
+                    message.textContent =
+                        "Please select both start date and end date.";
+
+                    return;
+                }
+
+
+                if (startDate > endDate) {
+
+                    message.textContent =
+                        "Start date cannot be after end date.";
+
+                    return;
+                }
+
+
+                const response = await fetch(
+                    `/matomo-user-history?userId=${encodeURIComponent(userId)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`
+                );
+
+
+                const visits =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    message.textContent =
+                        visits.message ||
+                        "Failed to load history.";
+
+                    return;
+                }
+
+
+                let activities = [];
+
+
+                visits.forEach(visit => {
+
+                    const actionDetails =
+                        visit.actionDetails || [];
+
+
+                    actionDetails.forEach(action => {
+
+                        let type = "-";
+                        let module = "-";
+                        let activity = "-";
+                        let details = "-";
+
+
+                        if (action.type === "event") {
+
+                            type = "Event";
+
+                            module =
+                                action.eventCategory || "-";
+
+                            activity =
+                                action.eventAction || "-";
+
+                            details =
+                                action.eventName || "-";
+
+                        }
+
+
+                        else if (action.type === "action") {
+
+                            type = "Page View";
+
+                            module = "Page";
+
+                            activity = "View";
+
+                            details =
+                                action.pageTitle ||
+                                action.url ||
+                                "-";
+
+                        }
+
+
+                        else {
+
+                            return;
+
+                        }
+
+
+                        activities.push({
+
+                            userId:
+                                visit.userId || "-",
+
+                            time:
+                                action.timestamp || 0,
+
+                            timeDisplay:
+                                action.serverTimePretty || "-",
+
+                            type: type,
+
+                            module: module,
+
+                            activity: activity,
+
+                            details: details
+
+                        });
+
+                    });
+
+                });
+
+
+                activities.sort(
+                    (a, b) => a.time - b.time
+                );
+
+
+                activities.forEach(item => {
+
+                    const row =
+                        document.createElement("tr");
+
+
+                    row.innerHTML = `
+                        <td>${item.userId}</td>
+                        <td>${item.timeDisplay}</td>
+                        <td>${item.type}</td>
+                        <td>${item.module}</td>
+                        <td>${item.activity}</td>
+                        <td>${item.details}</td>
+                    `;
+
+
+                    table.appendChild(row);
+
+                });
+
+
+                if (activities.length === 0) {
+
+                    message.textContent =
+                        "No activities found for this user.";
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load user history:",
+                    error
+                );
+
+
+                message.textContent =
+                    "Failed to connect to the server.";
+
+            }
+
+        }
+
+    </script>
+
+</body>
+</html>

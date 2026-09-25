@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<!-- Matomo Tracking -->
+<script>
+    var _paq = window._paq = window._paq || [];
+
+    const matomoUser = localStorage.getItem("username");
+
+    if (matomoUser) {
+        _paq.push(['setUserId', matomoUser]);
+    }
+
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+
+    (function() {
+        var u = 'http://localhost:8080/';
+        _paq.push(['setTrackerUrl', u + 'matomo.php']);
+        _paq.push(['setSiteId', '1']);
+
+        var d = document;
+        var g = d.createElement('script');
+        var s = d.getElementsByTagName('script')[0];
+
+        g.async = true;
+        g.src = u + 'matomo.js';
+        s.parentNode.insertBefore(g, s);
+    })();
+</script>
+<!-- End Matomo Tracking -->
+
+<body>
+
+    <h2>User Dashboard</h2>
+
+    <p>
+        Logged in as:
+        <strong id="username"></strong>
+    </p>
+
+    <button onclick="createEquipment()">Create Equipment</button>
+    <button onclick="updateEquipment()">Update Equipment</button>
+    <button onclick="deleteEquipment()">Delete Equipment</button>
+    <button onclick="logout()">Logout</button>
+
+
+    <script>
+
+        const username = localStorage.getItem("username");
+        const accessToken = localStorage.getItem("accessToken");
+
+        if (!username || !accessToken) {
+            window.location.href = "/login.html";
+        }
+
+        document.getElementById("username").textContent = username;
+
+
+        // -----------------------------
+        // Create Equipment
+        // -----------------------------
+
+        async function createEquipment() {
+
+    try {
+
+        const response = await fetch("/equipment", {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            },
+
+            body: JSON.stringify({
+                name: "Equipment A"
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Failed to create equipment");
+            return;
+        }
+
+        console.log("Equipment response:", data);
+
+        alert("Equipment created");
+
+    } catch (error) {
+
+        console.error("Equipment error:", error);
+        alert("Failed to connect to server");
+
+    }
+}
+
+
+        // -----------------------------
+        // Update Equipment
+        // -----------------------------
+
+        async function updateEquipment() {
+
+    try {
+
+        const response = await fetch("/equipment/1", {
+            method: "PUT",
+
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            },
+
+            body: JSON.stringify({
+                name: "Updated Equipment"
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Failed to update equipment");
+            return;
+        }
+
+        console.log("Equipment update response:", data);
+
+        alert("Equipment updated");
+
+    } catch (error) {
+
+        console.error("Equipment update error:", error);
+        alert("Failed to connect to server");
+
+    }
+}
+
+        // -----------------------------
+        // Delete Equipment
+        // -----------------------------
+
+        async function deleteEquipment() {
+
+    try {
+
+        const response = await fetch("/equipment/1", {
+            method: "DELETE",
+
+            headers: {
+                "Authorization": `Bearer ${accessToken}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Failed to delete equipment");
+            return;
+        }
+
+        console.log("Equipment delete response:", data);
+
+        alert("Equipment deleted");
+
+    } catch (error) {
+
+        console.error("Equipment delete error:", error);
+        alert("Failed to connect to server");
+
+    }
+}
+        // -----------------------------
+        // Logout
+        // -----------------------------
+
+        async function logout() {
+
+            try {
+
+                const response = await fetch("/activity", {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${accessToken}`
+                    },
+
+                    body: JSON.stringify({
+                        activity: "User logged out"
+                    })
+                });
+
+                const data = await response.json();
+
+                console.log("Logout activity:", data);
+
+                if (!response.ok) {
+                    console.error("Logout activity failed:", data);
+                }
+
+            } catch (error) {
+
+                console.error("Logout activity error:", error);
+
+            }
+
+            // Give the request a moment to reach the server
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            localStorage.removeItem("username");
+            localStorage.removeItem("accessToken");
+
+            window.location.href = "/login.html";
+        }
+
+    </script>
+
+</body>
+</html>
