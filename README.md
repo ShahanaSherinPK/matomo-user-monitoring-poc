@@ -1,6 +1,4 @@
-````markdown
 # Matomo User Monitoring POC
-
 A Proof of Concept for monitoring and tracking user activity in a web application using Matomo On-Premise.
 
 ## Overview
